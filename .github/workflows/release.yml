@@ -31,12 +31,6 @@ jobs:
       fail-fast: false
       matrix:
         sdk_versions: ${{ fromJSON(needs.package_sdks.outputs.SDK_VERSIONS) }}
-        arch:
-          - amd64
-          - arm32v7
-          - arm64v8
-          - ppc64le
-          - s390x
     steps:
       - uses: actions/checkout@v4
 
@@ -45,20 +39,9 @@ jobs:
         with:
           name: ${{ matrix.sdk_versions }}
           path: .
-
-      - name: Build cctools-port
-        uses: uraimo/run-on-arch-action@v2
-        id: build
-        with:
-          arch: none
-          distro: none
-          base_image: ${{ matrix.arch }}/ubuntu:24.04
-          githubToken: ${{ github.token }}
-          dockerRunArgs: |
-            --volume "${PWD}:/cctools-port"
-          shell: /bin/bash
-          install: |
-            apt-get update && apt-get install -y \
+      - name: Install dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y \
               curl \
               clang \
               make \
@@ -78,29 +61,31 @@ jobs:
               llvm-dev \
               uuid-dev \
               g++
-          run: |
-            cd /cctools-port
-            ls -la
-            mkdir -p dist
-            version=$(echo ${{ matrix.sdk_versions }} | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
-            export IPHONEOS_DEPLOYMENT_TARGET=5.0
-            sed -i 's|echo iPhoneOS\*sdk|echo iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh
-            SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
-            if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
-              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
-              tar -zcf dist/cctools-port-${version}-armv7-linux-${{ matrix.arch }}.tar.xz -C usage_examples/ios_toolchain/target .
-              rm -rf usage_examples/ios_toolchain/target
-              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/cctools-port-${version}-arm64-linux-${{ matrix.arch }}.tar.xz -C usage_examples/ios_toolchain/target .
-              rm -rf usage_examples/ios_toolchain/target
-            else
-              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
-              tar -zcf dist/cctools-port-${version}-armv7-linux-${{ matrix.arch }}.tar.xz -C usage_examples/ios_toolchain/target .
-              rm -rf usage_examples/ios_toolchain/target
-              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/cctools-port-${version}-arm64-linux-${{ matrix.arch }}.tar.xz -C usage_examples/ios_toolchain/target .
-              rm -rf usage_examples/ios_toolchain/target
-            fi
+
+      - name: Build cctools-port
+        id: build
+        run: |
+          ls -la
+          mkdir -p dist
+          version=$(echo ${{ matrix.sdk_versions }} | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
+          export IPHONEOS_DEPLOYMENT_TARGET=5.0
+          sed -i 's|echo iPhoneOS\*sdk|echo iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh
+          SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
+          if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
+            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
+            tar -zcf dist/cctools-port-${version}-armv7-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
+            rm -rf usage_examples/ios_toolchain/target
+            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+            tar -zcf dist/cctools-port-${version}-arm64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
+            rm -rf usage_examples/ios_toolchain/target
+          else
+            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
+            tar -zcf dist/cctools-port-${version}-armv7-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
+            rm -rf usage_examples/ios_toolchain/target
+            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+            tar -zcf dist/cctools-port-${version}-arm64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
+            rm -rf usage_examples/ios_toolchain/target
+          fi
 
       - name: Release
         uses: softprops/action-gh-release@v2
