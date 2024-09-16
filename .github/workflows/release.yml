@@ -82,10 +82,10 @@ jobs:
             SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
-              tar -zcf dist/cctools-port-${version}-simulator-armv7-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
+              tar -zcf dist/cctools-port-${version}-armv7-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
               rm -rf usage_examples/ios_toolchain/target
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/cctools-port-${version}-simulator-arm64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
+              tar -zcf dist/cctools-port-${version}-arm64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
               rm -rf usage_examples/ios_toolchain/target
             else
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
