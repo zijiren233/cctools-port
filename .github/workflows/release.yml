@@ -98,14 +98,14 @@ jobs:
             version=$(echo ${{ matrix.sdk_versions }} | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
             export IPHONEOS_DEPLOYMENT_TARGET=5.0
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
-              bash usage_examples/ios_toolchain/build.sh "$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz" x86_64
+              sed 's|iPhoneOS\*sdk|iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh | bash -c -- usage_examples/ios_toolchain/build.sh "$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz" x86_64
               tar -zcf dist/cctools-port-${version}-x86_64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
               rm -rf usage_examples/ios_toolchain/target
             else
-              bash usage_examples/ios_toolchain/build.sh "$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz" armv7
+              sed 's|iPhoneOS\*sdk|iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh | bash -c -- usage_examples/ios_toolchain/build.sh "$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz" armv7
               tar -zcf dist/cctools-port-${version}-armv7-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
               rm -rf usage_examples/ios_toolchain/target
-              bash usage_examples/ios_toolchain/build.sh "$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz" arm64
+              sed 's|iPhoneOS\*sdk|iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh | bash -c -- usage_examples/ios_toolchain/build.sh "$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz" arm64
               tar -zcf dist/cctools-port-${version}-arm64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
               rm -rf usage_examples/ios_toolchain/target
             fi
