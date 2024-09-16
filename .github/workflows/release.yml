@@ -96,6 +96,7 @@ jobs:
             ls -la
             mkdir -p dist
             version=$(echo ${{ matrix.sdk_versions }} | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
+            export IPHONEOS_DEPLOYMENT_TARGET=5.0
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
               bash usage_examples/ios_toolchain/build.sh "$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz" x86_64
               tar -zcf dist/cctools-port-${version}-x86_64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
