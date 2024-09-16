@@ -2,16 +2,18 @@ name: SDK
 
 on:
   workflow_call:
-    inputs:
-      macos_version:
-        type: string
-        required: true
-        description: macOS version (12, 13, 14)
+
+env:
+  macos_versions: "[12, 13, 14]"
 
 jobs:
   package_sdk:
     name: Package SDK
-    runs-on: macos-${{ inputs.macos_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        macos_versions: ${{ fromJSON(github.env.macos_versions) }}
+    runs-on: macos-${{ matrix.macos_versions }}
     outputs:
       RELEASE_VERSION: ${{ steps.get_release_version.outputs.RELEASE_VERSION }}
     steps:
@@ -34,17 +36,47 @@ jobs:
             sed 's|for SDK in $SDKS; do|for SDK in $SDKS; do\n[ -f "$WDIR/$SDK$SDK_EXT" ] \&\& continue|g' tools/gen_sdk_package.sh | \
             XCODEDIR=/Applications/$xcode SDK_COMPRESSOR=xz bash -s -- iPhoneSimulator
           done
+          mkdir -p sdk-${{ matrix.macos_versions }}
+          mv *.sdk.tar.xz sdk-${{ matrix.macos_versions }}
 
       - name: Upload SDK
         id: upload_sdk
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-${{ matrix.macos_versions }}
+          path: sdk-${{ matrix.macos_versions }}
+
+  collect_sdks:
+    name: Collect SDKs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect SDK
+        id: collect_sdk
         uses: actions/github-script@v7
         with:
           script: |
             const { execSync } = require('child_process');
-            execSync('npm install @actions/artifact')
+            execSync('npm install @actions/artifact');
             const { DefaultArtifactClient } = require('@actions/artifact');
             const artifact = new DefaultArtifactClient();
             const fs = require('fs');
+
+            const allArtifacts = await artifact.listArtifacts();
+            const sdkArtifacts = allArtifacts.artifacts.filter(a => a.name.startsWith('sdk-'));
+            for (const sdkArtifact of sdkArtifacts) {
+              await artifact.downloadArtifact(sdkArtifact.name);
+            }
+
+            const sdkFolders = fs.readdirSync('.').filter(folder => folder.startsWith('sdk-'));
+            for (const folder of sdkFolders) {
+              const sdkFiles = fs.readdirSync(folder).filter(file => file.endsWith('.sdk.tar.xz'));
+              for (const file of sdkFiles) {
+                console.log(`collect ${folder}/${file}`);
+                const sourcePath = `${folder}/${file}`;
+                const destinationPath = `../${file}`;
+                fs.renameSync(sourcePath, destinationPath);
+              }
+            }
 
             const files = fs.readdirSync('.');
             for (const file of files) {

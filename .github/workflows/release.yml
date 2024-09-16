@@ -6,12 +6,6 @@ on:
 jobs:
   package_sdks:
     uses: ./.github/workflows/sdk.yml
-    strategy:
-      fail-fast: false
-      matrix:
-        macos_version: [12, 13, 14]
-    with:
-      macos_version: ${{ matrix.macos_version }}
 
   collect_sdks:
     name: Collect SDKs
