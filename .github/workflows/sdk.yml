@@ -45,6 +45,7 @@ jobs:
         with:
           name: sdk-${{ matrix.macos_versions }}
           path: sdk-${{ matrix.macos_versions }}
+          compression-level: 0
 
   collect_sdks:
     name: Collect SDKs
@@ -65,7 +66,8 @@ jobs:
             const allArtifacts = await artifact.listArtifacts();
             const sdkArtifacts = allArtifacts.artifacts.filter(a => a.name.startsWith('sdk-'));
             for (const sdkArtifact of sdkArtifacts) {
-              await artifact.downloadArtifact(sdkArtifact.name);
+              console.log('download', sdkArtifact);
+              await artifact.downloadArtifact(sdkArtifact.id);
             }
 
             const sdkFolders = fs.readdirSync('.').filter(folder => folder.startsWith('sdk-'));
