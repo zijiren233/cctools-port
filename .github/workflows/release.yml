@@ -89,7 +89,8 @@ jobs:
               zlib1g-dev \
               bash \
               llvm-dev \
-              uuid-dev
+              uuid-dev \
+              g++
           run: |
             cd /cctools-port
             ls -la
