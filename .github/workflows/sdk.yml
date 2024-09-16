@@ -16,7 +16,7 @@ jobs:
         macos_versions:
           - 12
           - 13
-          # - 14
+          - 14
     runs-on: macos-${{ matrix.macos_versions }}
     steps:
       - uses: actions/checkout@v4
