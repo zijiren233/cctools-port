@@ -67,7 +67,9 @@ jobs:
             const sdkArtifacts = allArtifacts.artifacts.filter(a => a.name.startsWith('sdk-'));
             for (const sdkArtifact of sdkArtifacts) {
               console.log('download', sdkArtifact);
-              await artifact.downloadArtifact(sdkArtifact.id);
+              await artifact.downloadArtifact(sdkArtifact.id, {
+                path: sdkArtifact.name
+              });
             }
 
             const sdkFolders = fs.readdirSync('.').filter(folder => folder.startsWith('sdk-'));
