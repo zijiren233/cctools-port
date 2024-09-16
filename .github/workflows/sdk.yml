@@ -3,16 +3,16 @@ name: SDK
 on:
   workflow_call:
 
-env:
-  macos_versions: "[12, 13, 14]"
-
 jobs:
   package_sdk:
     name: Package SDK
     strategy:
       fail-fast: false
       matrix:
-        macos_versions: ${{ fromJSON(github.env.macos_versions) }}
+        macos_versions:
+          - 12
+          - 13
+          - 14
     runs-on: macos-${{ matrix.macos_versions }}
     outputs:
       RELEASE_VERSION: ${{ steps.get_release_version.outputs.RELEASE_VERSION }}
