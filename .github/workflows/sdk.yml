@@ -48,10 +48,13 @@ jobs:
 
             const files = fs.readdirSync('.');
             for (const file of files) {
-              if (!file.endsWith('.sdk.tar.xz')) {
+              if (!file.endsWith('.sdk.tar.xz') || (!file.startsWith('iPhoneOS') && !file.startsWith('iPhoneSimulator'))) {
                 continue;
               }
               const name = file.replace(/\.sdk\.tar\.xz$/, '').replace('.', '-');
+              if (name === 'iPhoneOS' || name === 'iPhoneSimulator') {
+                continue;
+              }
 
               const maxRetries = 3;
               let retries = 0;
