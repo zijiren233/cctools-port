@@ -76,10 +76,9 @@ jobs:
             for (const folder of sdkFolders) {
               const sdkFiles = fs.readdirSync(folder).filter(file => file.endsWith('.sdk.tar.xz'));
               for (const file of sdkFiles) {
-                console.log(`collect ${folder}/${file}`);
                 const sourcePath = `${folder}/${file}`;
-                const destinationPath = `../${file}`;
-                fs.renameSync(sourcePath, destinationPath);
+                console.log(`collect ${sourcePath}`);
+                fs.renameSync(sourcePath, file);
               }
             }
 
