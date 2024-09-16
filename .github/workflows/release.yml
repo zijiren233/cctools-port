@@ -99,8 +99,10 @@ jobs:
 
               mkdir -p sdk && tar -xf "$SDK_FILE" -C sdk
 
+              ls -hl sdk/usr/lib/system/
+
               for lib in libsystem_kernel libsystem_platform libsystem_pthread; do
-                cp osxcross/SDK/*/usr/lib/system/${lib}.{dylib,tbd} sdk/usr/lib/system/
+                cp osxcross/SDK/*/usr/lib/system/${lib}.tbd sdk/usr/lib/system/
               done
 
               rm -rf "$SDK_FILE"
