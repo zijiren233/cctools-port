@@ -67,7 +67,6 @@ jobs:
           install: |
             apt-get update && apt-get install -y \
               curl \
-              wget \
               clang \
               make \
               cmake \
@@ -95,23 +94,8 @@ jobs:
             sed -i 's|echo iPhoneOS\*sdk|echo iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh
             SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
-              wget https://github.com/zijiren233/osxcross/releases/download/20240915184842/osxcross-15-1-linux-amd64.tar.gz
-              mkdir -p osxcross && tar -zxf osxcross-15-1-linux-amd64.tar.gz -C osxcross
-
-              mkdir -p sdk && tar -xf "$SDK_FILE" -C sdk --strip-components 1
-              ls -hl sdk
-              ls -hl sdk/usr/lib/system/
-
-              for lib in libsystem_kernel libsystem_platform libsystem_pthread; do
-                cp osxcross/SDK/*/usr/lib/system/${lib}.tbd sdk/usr/lib/system/
-              done
-
-              rm -rf "$SDK_FILE"
-              tar -cf - -C sdk . | xz -c -5 - > "$SDK_FILE"
-              rm -rf sdk
-
-              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" x86_64
-              tar -zcf dist/cctools-port-${version}-x86_64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
+              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+              tar -zcf dist/cctools-port-${version}-simulator-arm64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
               rm -rf usage_examples/ios_toolchain/target
             else
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
