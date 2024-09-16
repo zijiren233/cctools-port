@@ -21,11 +21,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Release Version
-        id: get_release_version
-        run: |
-          echo "RELEASE_VERSION=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
-
       - name: SDK Package
         run: |
           xcode-select -p
