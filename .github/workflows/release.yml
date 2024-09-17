@@ -106,10 +106,7 @@ jobs:
               zlib1g-dev \
               llvm-dev \
               uuid-dev \
-              software-properties-common
-            add-apt-repository ppa:ubuntu-toolchain-r/test -y
-            apt install -y gcc-13 g++-13
-            update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 13 --slave /usr/bin/g++ g++ /usr/bin/g++-13
+              gcc g++
             wget https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
             mkdir -p /llvm
             tar -xf clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz -C /llvm --strip-components=1
