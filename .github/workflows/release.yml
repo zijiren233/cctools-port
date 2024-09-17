@@ -1,4 +1,4 @@
-name: Release cctools-port
+name: Release ioscross
 
 on:
   workflow_dispatch:
@@ -52,8 +52,8 @@ jobs:
           files: |
             ./*.sdk.tar.xz
 
-  build_cctools_port:
-    name: Build cctools-port
+  build_ioscross:
+    name: Build ioscross
     runs-on: ubuntu-latest
     needs:
       - package_sdks
@@ -76,7 +76,7 @@ jobs:
           name: ${{ matrix.sdk_versions }}
           path: .
 
-      - name: Build cctools-port
+      - name: Build ioscross
         uses: uraimo/run-on-arch-action@v2
         id: build
         with:
@@ -129,14 +129,15 @@ jobs:
             export IPHONEOS_DEPLOYMENT_TARGET=5.0
             sed -i 's|echo iPhoneOS\*sdk|echo iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh
             SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
-            export TARGETDIR=/usr/local/ioscross
+            TARGETDIR=/usr/local/ioscross
+            sed -i "s|TARGETDIR=\"\$PWD/target\"|TARGETDIR=$TARGETDIR|g" usage_examples/ios_toolchain/build.sh
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/cctools-port-${version}-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
+              tar -zcf dist/ioscross-${version}-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
             else
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/cctools-port-${version}-linux-arm64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
+              tar -zcf dist/ioscross-${version}-linux-arm64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
             fi
 
