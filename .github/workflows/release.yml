@@ -21,6 +21,37 @@ jobs:
         run: |
           echo "RELEASE_VERSION=$(date +%Y%m%d%H%M%S)" >> $GITHUB_OUTPUT
 
+      - name: Download SDKs
+        id: download_sdks
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            execSync('npm install @actions/artifact');
+            const { DefaultArtifactClient } = require('@actions/artifact');
+            const artifact = new DefaultArtifactClient();
+            const fs = require('fs');
+
+            const allArtifacts = await artifact.listArtifacts();
+            const sdkArtifacts = allArtifacts.artifacts.filter(a => !a.name.startsWith('sdk-'));
+            for (const sdkArtifact of sdkArtifacts) {
+              console.log('download', sdkArtifact);
+              await artifact.downloadArtifact(sdkArtifact.id, {
+                path: '.'
+              });
+            }
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_release_version.outputs.RELEASE_VERSION }}
+          draft: false
+          prerelease: false
+          append_body: false
+          fail_on_unmatched_files: true
+          files: |
+            ./*.sdk.tar.xz
+
   build_cctools_port:
     name: Build cctools-port
     runs-on: ubuntu-latest
@@ -31,6 +62,11 @@ jobs:
       fail-fast: false
       matrix:
         sdk_versions: ${{ fromJSON(needs.package_sdks.outputs.SDK_VERSIONS) }}
+        ubuntu_version:
+          - 18.04
+          - 20.04
+          - 22.04
+          - 24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -40,64 +76,70 @@ jobs:
           name: ${{ matrix.sdk_versions }}
           path: .
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y \
-            curl \
-            clang \
-            make \
-            cmake \
-            git \
-            patch \
-            python3 \
-            libssl-dev \
-            lzma-dev \
-            libxml2-dev \
-            xz-utils \
-            bzip2 \
-            cpio \
-            bzip2 \
-            zlib1g-dev \
-            bash \
-            llvm-dev \
-            uuid-dev \
-            g++ \
-            libtinfo5
-
-      - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@master
-        with:
-          version: 18
-          directory: ${{ runner.temp }}/llvm
-
-      - name: Symlink libclang.so (Linux)
-        run: sudo ln -s libclang-11.so.1 /lib/x86_64-linux-gnu/libclang.so
-        working-directory: ${{ env.LLVM_PATH }}/lib
-
       - name: Build cctools-port
+        uses: uraimo/run-on-arch-action@v2
         id: build
-        run: |
-          export PATH=${{ env.LLVM_PATH }}/bin:$PATH
-          mkdir -p dist
-          version=$(echo ${{ matrix.sdk_versions }} | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
-          export IPHONEOS_DEPLOYMENT_TARGET=5.0
-          sed -i 's|echo iPhoneOS\*sdk|echo iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh
-          SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
-          if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
-            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
-            tar -zcf dist/cctools-port-${version}-armv7-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
-            rm -rf usage_examples/ios_toolchain/target
-            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-            tar -zcf dist/cctools-port-${version}-arm64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
-            rm -rf usage_examples/ios_toolchain/target
-          else
-            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
-            tar -zcf dist/cctools-port-${version}-armv7-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
-            rm -rf usage_examples/ios_toolchain/target
-            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-            tar -zcf dist/cctools-port-${version}-arm64-linux-amd64.tar.xz -C usage_examples/ios_toolchain/target .
-            rm -rf usage_examples/ios_toolchain/target
-          fi
+        with:
+          arch: none
+          distro: none
+          base_image: amd64/ubuntu:${{ matrix.ubuntu_version }}
+          githubToken: ${{ github.token }}
+          dockerRunArgs: |
+            --volume "${PWD}:/cctools-port"
+          shell: /bin/bash
+          install: |
+            apt-get update && apt-get install -y \
+              curl \
+              wget \
+              clang \
+              make \
+              cmake \
+              git \
+              patch \
+              python3 \
+              libssl-dev \
+              lzma-dev \
+              libxml2-dev \
+              xz-utils \
+              bzip2 \
+              cpio \
+              zlib1g-dev \
+              llvm-dev \
+              uuid-dev
+            wget https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
+            mkdir -p /llvm
+            tar -xf clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz -C /llvm --strip-components=1
+            rm -rf clang*.tar.xz
+            if [ "${{ matrix.ubuntu_version }}" = "24.04" ]; then
+              wget http://archive.ubuntu.com/ubuntu/pool/universe/n/ncurses/libtinfo5_6.4-2_amd64.deb && dpkg -i libtinfo5_6.4-2_amd64.deb && rm libtinfo5_6.4-2_amd64.deb
+            else
+              apt install -y libtinfo5
+            fi
+            curl -sSL https://github.com/Kitware/CMake/releases/download/v3.30.3/cmake-3.30.3-linux-x86_64.tar.gz | tar -xzC /opt
+          run: |
+            export PATH=/llvm/bin:$PATH
+            export PATH=/opt/cmake-3.30.3-linux-x86_64/bin:$PATH
+            cd /cctools-port
+            mkdir -p dist
+            version=$(echo ${{ matrix.sdk_versions }} | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
+            export IPHONEOS_DEPLOYMENT_TARGET=5.0
+            sed -i 's|echo iPhoneOS\*sdk|echo iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh
+            SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
+            if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
+              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
+              tar -zcf dist/cctools-port-${version}-armv7-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C usage_examples/ios_toolchain/target .
+              rm -rf usage_examples/ios_toolchain/target
+              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+              tar -zcf dist/cctools-port-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C usage_examples/ios_toolchain/target .
+              rm -rf usage_examples/ios_toolchain/target
+            else
+              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
+              tar -zcf dist/cctools-port-${version}-armv7-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C usage_examples/ios_toolchain/target .
+              rm -rf usage_examples/ios_toolchain/target
+              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+              tar -zcf dist/cctools-port-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C usage_examples/ios_toolchain/target .
+              rm -rf usage_examples/ios_toolchain/target
+            fi
 
       - name: Release
         uses: softprops/action-gh-release@v2
@@ -109,4 +151,3 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             dist/*
-            ./*.sdk.tar.xz
