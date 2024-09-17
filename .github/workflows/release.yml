@@ -107,6 +107,10 @@ jobs:
               llvm-dev \
               uuid-dev \
               gcc g++
+            if [ "${{ matrix.ubuntu_version }}" = "20.04" ]; then
+              apt install -y gcc-10 g++-10
+              update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10 --slave /usr/bin/g++ g++ /usr/bin/g++-10
+            fi
             wget https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
             mkdir -p /llvm
             tar -xf clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz -C /llvm --strip-components=1
