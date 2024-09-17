@@ -105,7 +105,8 @@ jobs:
               cpio \
               zlib1g-dev \
               llvm-dev \
-              uuid-dev
+              uuid-dev \
+              g++
             wget https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.8/clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz
             mkdir -p /llvm
             tar -xf clang+llvm-18.1.8-x86_64-linux-gnu-ubuntu-18.04.tar.xz -C /llvm --strip-components=1
