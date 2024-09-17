@@ -137,7 +137,7 @@ jobs:
               rm -rf $TARGETDIR
             else
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/ioscross-${version}-linux-arm64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
+              tar -zcf dist/ioscross-${version}-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
             fi
 
