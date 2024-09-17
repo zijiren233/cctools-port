@@ -129,17 +129,15 @@ jobs:
             export IPHONEOS_DEPLOYMENT_TARGET=5.0
             sed -i 's|echo iPhoneOS\*sdk|echo iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh
             SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
+            export TARGETDIR=/usr/local/ioscross
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/cctools-port-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C usage_examples/ios_toolchain/target .
-              rm -rf usage_examples/ios_toolchain/target
+              tar -zcf dist/cctools-port-${version}-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
+              rm -rf $TARGETDIR
             else
-              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
-              tar -zcf dist/cctools-port-${version}-armv7-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C usage_examples/ios_toolchain/target .
-              rm -rf usage_examples/ios_toolchain/target
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/cctools-port-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C usage_examples/ios_toolchain/target .
-              rm -rf usage_examples/ios_toolchain/target
+              tar -zcf dist/cctools-port-${version}-linux-arm64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
+              rm -rf $TARGETDIR
             fi
 
       - name: Release
