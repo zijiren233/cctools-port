@@ -123,6 +123,7 @@ jobs:
             SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
             TARGETDIR=/usr/local/ioscross
             sed -i "s|TARGETDIR=\"\$PWD/target\"|TARGETDIR=$TARGETDIR|g" usage_examples/ios_toolchain/build.sh
+            sed -i 's|-o test|-v -o test|g' usage_examples/ios_toolchain/build.sh
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
               sed -i 's|iPhoneOS|iPhoneSimulator|g' usage_examples/ios_toolchain/build.sh
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
