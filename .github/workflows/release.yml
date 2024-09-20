@@ -121,18 +121,26 @@ jobs:
             mkdir -p dist
             version=$(echo ${{ matrix.sdk_versions }} | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
             export IPHONEOS_DEPLOYMENT_TARGET=5.0
-            sed -i 's|echo iPhoneOS\*sdk|echo iPhone\*sdk|g' usage_examples/ios_toolchain/build.sh
             SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
             TARGETDIR=/usr/local/ioscross
             sed -i "s|TARGETDIR=\"\$PWD/target\"|TARGETDIR=$TARGETDIR|g" usage_examples/ios_toolchain/build.sh
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
+              sed -i 's|iPhoneOS|iPhoneSimulator|g' usage_examples/ios_toolchain/build.sh
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/ioscross-${version}-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
+              tar -zcf dist/ioscross-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
+              rm -rf $TARGETDIR
+
+              sed -i 's|^TRIPLE=.*|TRIPLE="x86_64-apple-darwin11"|' usage_examples/ios_toolchain/build.sh
+              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" x86_64
+              tar -zcf dist/ioscross-${version}-x86_64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
+              rm -rf $TARGETDIR
+            elif [[ "${{ matrix.sdk_versions }}" == iPhoneOS* ]]; then
+              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+              tar -zcf dist/ioscross-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
             else
-              bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
-              tar -zcf dist/ioscross-${version}-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
-              rm -rf $TARGETDIR
+              echo "Unknown SDK version: ${{ matrix.sdk_versions }}"
+              exit 1
             fi
 
       - name: Release
