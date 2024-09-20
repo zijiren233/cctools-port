@@ -120,7 +120,6 @@ jobs:
             cd /cctools-port
             mkdir -p dist
             version=$(echo ${{ matrix.sdk_versions }} | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
-            export IPHONEOS_DEPLOYMENT_TARGET=5.0
             SDK_FILE="$PWD/$(echo ${{ matrix.sdk_versions }} | sed 's/-/./g').sdk.tar.xz"
             TARGETDIR=/usr/local/ioscross
             sed -i "s|TARGETDIR=\"\$PWD/target\"|TARGETDIR=$TARGETDIR|g" usage_examples/ios_toolchain/build.sh
@@ -135,6 +134,7 @@ jobs:
               tar -zcf dist/ioscross-${version}-x86_64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
             elif [[ "${{ matrix.sdk_versions }}" == iPhoneOS* ]]; then
+              export IPHONEOS_DEPLOYMENT_TARGET=5.0
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
               tar -zcf dist/ioscross-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
