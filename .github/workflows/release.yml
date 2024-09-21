@@ -132,7 +132,6 @@ jobs:
               sed -i 's|IPHONEOS_DEPLOYMENT_TARGET|IPHONEOS_SIMULATOR_DEPLOYMENT_TARGET|g' usage_examples/ios_toolchain/wrapper.c
               sed -i 's|-miphoneos-version-min=|-miphonesimulator-version-min=|g' usage_examples/ios_toolchain/wrapper.c
 
-              export IPHONEOS_SIMULATOR_DEPLOYMENT_TARGET=5.0
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
               tar -zcf dist/ioscross-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
@@ -142,7 +141,6 @@ jobs:
               tar -zcf dist/ioscross-${version}-x86_64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
             elif [[ "${{ matrix.sdk_versions }}" == iPhoneOS* ]]; then
-              export IPHONEOS_DEPLOYMENT_TARGET=5.0
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
               tar -zcf dist/ioscross-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
