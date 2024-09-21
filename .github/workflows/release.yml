@@ -124,8 +124,15 @@ jobs:
             TARGETDIR=/usr/local/ioscross
             sed -i "s|TARGETDIR=\"\$PWD/target\"|TARGETDIR=$TARGETDIR|g" usage_examples/ios_toolchain/build.sh
             sed -i 's|-o test|-v -o test|g' usage_examples/ios_toolchain/build.sh
+            # https://clang.llvm.org/docs/ClangCommandLineReference.html
             if [[ "${{ matrix.sdk_versions }}" == iPhoneSimulator* ]]; then
               sed -i 's|iPhoneOS|iPhoneSimulator|g' usage_examples/ios_toolchain/build.sh
+              sed -i 's|IOS_SDK_SYSROOT|IOS_SIMULATOR_SDK_SYSROOT|g' usage_examples/ios_toolchain/wrapper.c
+              sed -i 's|IOS_TARGET_CPU|IOS_SIMULATOR_TARGET_CPU|g' usage_examples/ios_toolchain/wrapper.c
+              sed -i 's|IPHONEOS_DEPLOYMENT_TARGET|IPHONEOS_SIMULATOR_DEPLOYMENT_TARGET|g' usage_examples/ios_toolchain/wrapper.c
+              sed -i 's|-miphoneos-version-min=|-miphonesimulator-version-min=|g' usage_examples/ios_toolchain/wrapper.c
+
+              export IPHONEOS_SIMULATOR_DEPLOYMENT_TARGET=5.0
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
               tar -zcf dist/ioscross-${version}-arm64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
