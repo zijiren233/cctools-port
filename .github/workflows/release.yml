@@ -142,6 +142,7 @@ jobs:
               tar -zcf dist/ioscross-${version}-x86_64-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
               rm -rf $TARGETDIR
             elif [[ "${{ matrix.sdk_versions }}" == iPhoneOS* ]]; then
+              export IPHONEOS_DEPLOYMENT_TARGET=4.2
               sed -i 's|^TRIPLE=.*|TRIPLE="armv7-apple-darwin11"|' usage_examples/ios_toolchain/build.sh
               bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" armv7
               tar -zcf dist/ioscross-${version}-armv7-linux-amd64-gnu-ubuntu-${{ matrix.ubuntu_version }}.tar.xz -C $TARGETDIR .
