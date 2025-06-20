@@ -110,6 +110,10 @@ jobs:
           update-alternatives --install /usr/bin/clang clang "$(ls /usr/bin/clang-1*)" 100
           update-alternatives --install /usr/bin/clang++ clang++ "$(ls /usr/bin/clang++-1*)" 100
 
+          if [ "${{ matrix.ubuntu_version }}" = "20.04" ]; then
+            apt install -y libstdc++-10-dev
+          fi
+
           # Download and install CMake
           mkdir -p /cmake
           if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "amd64" ]; then
