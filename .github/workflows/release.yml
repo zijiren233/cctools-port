@@ -100,6 +100,7 @@ jobs:
             zlib1g-dev \
             llvm-dev \
             uuid-dev \
+            gcc g++ \
             lsb-release \
             software-properties-common \
             gnupg
