@@ -119,6 +119,11 @@ jobs:
           fi
           export PATH=$CLANGDIR/bin:$PATH
 
+          # fix: fatal error: 'span' file not found
+          if [ "$1" = "20.04" ]; then
+            apt install -y libstdc++-10-dev
+          fi
+
           # Download and install CMake
           mkdir -p /cmake
           if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "amd64" ]; then
