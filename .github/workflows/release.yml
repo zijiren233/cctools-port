@@ -103,16 +103,21 @@ jobs:
             gcc g++ \
             lsb-release \
             software-properties-common \
-            gnupg
+            gnupg \
+            build-essential \
+            ninja-build
 
-          # Install LLVM/Clang
-          bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
-          update-alternatives --install /usr/bin/clang clang "$(ls /usr/bin/clang-[21]*)" 100
-          update-alternatives --install /usr/bin/clang++ clang++ "$(ls /usr/bin/clang++-[21]*)" 100
-
-          if [ "${{ matrix.ubuntu_version }}" = "20.04" ]; then
-            apt install -y libstdc++-10-dev
+          CLANGDIR=/usr/local/apple-clang
+          mkdir -p $CLANGDIR
+          if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "amd64" ]; then
+            curl -sSL https://github.com/zijiren233/osxcross/releases/download/v0.2.3/apple-clang-21-linux-x86_64-gnu-ubuntu-$1.tar.gz | tar -xz -C $CLANGDIR --strip-components=1
+          elif [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+            curl -sSL https://github.com/zijiren233/osxcross/releases/download/v0.2.3/apple-clang-21-linux-aarch64-gnu-ubuntu-$1.tar.gz | tar -xz -C $CLANGDIR --strip-components=1
+          else
+            echo "Unsupported architecture: $(uname -m)"
+            exit 1
           fi
+          export PATH=$CLANGDIR/bin:$PATH
 
           # Download and install CMake
           mkdir -p /cmake
@@ -157,12 +162,14 @@ jobs:
             # Build arm64 simulator
             sed -i 's|^TRIPLE=.*|TRIPLE="arm64-apple-darwin11"|' usage_examples/ios_toolchain/build.sh
             bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+            cp -r $CLANGDIR $TARGETDIR/clang
             tar -zcf dist/ioscross-${version}-arm64-linux-${ARCH_SUFFIX}-gnu-ubuntu-$1.tar.gz -C $TARGETDIR .
             rm -rf $TARGETDIR
 
             # Build x86_64 simulator
             sed -i 's|^TRIPLE=.*|TRIPLE="x86_64-apple-darwin11"|' usage_examples/ios_toolchain/build.sh
             bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" x86_64
+            cp -r $CLANGDIR $TARGETDIR/clang
             tar -zcf dist/ioscross-${version}-x86_64-linux-${ARCH_SUFFIX}-gnu-ubuntu-$1.tar.gz -C $TARGETDIR .
             rm -rf $TARGETDIR
           elif [[ "$2" == iPhoneOS* ]]; then
@@ -170,6 +177,7 @@ jobs:
             export IPHONEOS_DEPLOYMENT_TARGET=4.2
             sed -i 's|^TRIPLE=.*|TRIPLE="arm64-apple-darwin11"|' usage_examples/ios_toolchain/build.sh
             bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+            cp -r $CLANGDIR $TARGETDIR/clang
             tar -zcf dist/ioscross-${version}-arm64-linux-${ARCH_SUFFIX}-gnu-ubuntu-$1.tar.gz -C $TARGETDIR .
             rm -rf $TARGETDIR
           else
