@@ -110,9 +110,9 @@ jobs:
           CLANGDIR=/usr/local/apple-clang
           mkdir -p $CLANGDIR
           if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "amd64" ]; then
-            curl -sSL https://github.com/zijiren233/osxcross/releases/download/v0.2.5/apple-clang-21-linux-x86_64-gnu-ubuntu-$1.tar.gz | tar -xz -C $CLANGDIR --strip-components=1
+            curl -sSL https://github.com/zijiren233/osxcross/releases/download/v0.2.6/apple-clang-21-linux-x86_64-gnu-ubuntu-$1.tar.gz | tar -xz -C $CLANGDIR --strip-components=1
           elif [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
-            curl -sSL https://github.com/zijiren233/osxcross/releases/download/v0.2.5/apple-clang-21-linux-aarch64-gnu-ubuntu-$1.tar.gz | tar -xz -C $CLANGDIR --strip-components=1
+            curl -sSL https://github.com/zijiren233/osxcross/releases/download/v0.2.6/apple-clang-21-linux-aarch64-gnu-ubuntu-$1.tar.gz | tar -xz -C $CLANGDIR --strip-components=1
           else
             echo "Unsupported architecture: $(uname -m)"
             exit 1
