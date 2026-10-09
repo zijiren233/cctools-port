@@ -57,7 +57,7 @@ jobs:
         with:
           script: |
             const { execSync } = require('child_process');
-            execSync('npm install @actions/artifact');
+            execSync('npm install @actions/artifact@2');
             const { DefaultArtifactClient } = require('@actions/artifact');
             const artifact = new DefaultArtifactClient();
             const fs = require('fs');
@@ -128,7 +128,7 @@ jobs:
         with:
           script: |
             const { execSync } = require('child_process');
-            execSync('npm install @actions/artifact')
+            execSync('npm install @actions/artifact@2')
             const { DefaultArtifactClient } = require('@actions/artifact');
             const artifact = new DefaultArtifactClient();
             const sdks = await artifact.listArtifacts();
