@@ -199,7 +199,11 @@ git_clone_repository https://github.com/tpoechtrager/apple-libdispatch.git main
 pushd apple-libdispatch &>/dev/null
 mkdir -p build
 pushd build &>/dev/null
+# -Werror is enabled by default; silence the unused-but-set-global
+# diagnostic that Apple Clang 23 reports for queue.c
 CC=clang CXX=clang++ \
+    CFLAGS="-Wno-error=unused-but-set-global" \
+    CXXFLAGS="-Wno-error=unused-but-set-global" \
     cmake .. -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_INSTALL_PREFIX=$TARGETDIR
 make install -j$JOBS
 popd &>/dev/null
@@ -229,12 +233,21 @@ popd &>/dev/null
 pushd tmp &>/dev/null
 mkdir -p cctools
 pushd cctools &>/dev/null
+# cctools' configure overwrites include/llvm-c/lto.h with a copy from the
+# detected LLVM (llvm-config) without adding its include dir to the header
+# search path; lto.h from LLVM >= 21 includes llvm-c/Visibility.h and the
+# generated llvm/Config headers, which then fail to resolve. Merge the LLVM
+# include dir into the generated Makefiles via CPPFLAGS.
+if command -v llvm-config >/dev/null 2>&1; then
+  export CPPFLAGS="-isystem $(llvm-config --includedir)"
+fi
 ../../../../cctools/configure \
     --target=$TRIPLE \
     --prefix=$TARGETDIR \
     --with-libtapi=$TARGETDIR \
     --with-libdispatch=$TARGETDIR \
     --with-libblocksruntime=$TARGETDIR
+unset CPPFLAGS
 make -j$JOBS && make install
 popd &>/dev/null
 popd &>/dev/null
