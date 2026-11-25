@@ -1,0 +1,172 @@
+name: Precheck
+
+on:
+  push:
+    branches:
+      - "precheck/**"
+
+jobs:
+  package_sdks:
+    uses: ./.github/workflows/sdk.yml
+
+  build_ioscross:
+    name: Build ioscross
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sdk_versions: iPhoneOS26-5
+            ubuntu_version: 24.04
+            runs-on: ubuntu-latest
+          - sdk_versions: iPhoneOS26-5
+            ubuntu_version: 24.04
+            runs-on: ubuntu-24.04-arm
+          - sdk_versions: iPhoneSimulator26-5
+            ubuntu_version: 26.04
+            runs-on: ubuntu-latest
+          - sdk_versions: iPhoneOS17-0
+            ubuntu_version: 20.04
+            runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runs-on }}
+    needs:
+      - package_sdks
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download SDK
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.sdk_versions }}
+          path: .
+
+      - name: Create build script
+        run: |
+          cat > build_script.sh << 'EOF'
+          #!/bin/bash
+          set -e
+
+          echo "Building ioscross for Ubuntu $1 with SDK $2"
+          echo "Architecture: $(uname -m)"
+
+          # Update package list and install dependencies
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update && apt-get install -y \
+            curl \
+            wget \
+            make \
+            cmake \
+            git \
+            patch \
+            python3 \
+            libssl-dev \
+            liblzma-dev \
+            libxml2-dev \
+            xz-utils \
+            bzip2 \
+            cpio \
+            zlib1g-dev \
+            llvm-dev \
+            uuid-dev \
+            gcc g++ \
+            lsb-release \
+            software-properties-common \
+            gnupg \
+            build-essential \
+            ninja-build
+
+          CLANGDIR=/usr/local/apple-clang
+          mkdir -p $CLANGDIR
+          if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "amd64" ]; then
+            curl -sSL https://github.com/zijiren233/osxcross/releases/download/v0.2.8/apple-clang-23-linux-x86_64-gnu-ubuntu-$1.tar.gz | tar -xz -C $CLANGDIR --strip-components=1
+          elif [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+            curl -sSL https://github.com/zijiren233/osxcross/releases/download/v0.2.8/apple-clang-23-linux-aarch64-gnu-ubuntu-$1.tar.gz | tar -xz -C $CLANGDIR --strip-components=1
+          else
+            echo "Unsupported architecture: $(uname -m)"
+            exit 1
+          fi
+          export PATH=$CLANGDIR/bin:$PATH
+
+          # fix: fatal error: 'span' file not found
+          if [ "$1" = "20.04" ]; then
+            apt install -y libstdc++-10-dev
+          fi
+
+          # Download and install CMake
+          mkdir -p /cmake
+          if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "amd64" ]; then
+            curl -sSL https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-linux-x86_64.tar.gz | tar -xz -C /cmake --strip-components=1
+          elif [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+            curl -sSL https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-linux-aarch64.tar.gz | tar -xz -C /cmake --strip-components=1
+          else
+            echo "Unsupported architecture: $(uname -m)"
+            exit 1
+          fi
+          export PATH=/cmake/bin:$PATH
+
+          # Build ioscross
+          mkdir -p dist
+          version=$(echo $2 | sed 's/^iPhoneOS-//;s/^iPhoneSimulator-//')
+          SDK_FILE="/cctools-port/$(echo $2 | sed 's/-/./g').sdk.tar.xz"
+          TARGETDIR=/usr/local/ioscross
+
+          # Modify build script settings
+          sed -i "s|TARGETDIR=\"\$PWD/target\"|TARGETDIR=$TARGETDIR|g" usage_examples/ios_toolchain/build.sh
+          sed -i 's|-o test|-v -o test|g' usage_examples/ios_toolchain/build.sh
+
+          # Determine architecture suffix for output filename
+          if [ "$(uname -m)" = "x86_64" ] || [ "$(uname -m)" = "amd64" ]; then
+            ARCH_SUFFIX="x86_64"
+          elif [ "$(uname -m)" = "aarch64" ] || [ "$(uname -m)" = "arm64" ]; then
+            ARCH_SUFFIX="aarch64"
+          else
+            echo "Unsupported architecture: $(uname -m)"
+            exit 1
+          fi
+
+          if [[ "$2" == iPhoneSimulator* ]]; then
+            # iPhone Simulator build
+            sed -i 's|iPhoneOS|iPhoneSimulator|g' usage_examples/ios_toolchain/build.sh
+            sed -i 's|IOS_SDK_SYSROOT|IOS_SIMULATOR_SDK_SYSROOT|g' usage_examples/ios_toolchain/wrapper.c
+            sed -i 's|IOS_TARGET_CPU|IOS_SIMULATOR_TARGET_CPU|g' usage_examples/ios_toolchain/wrapper.c
+            sed -i 's|IPHONEOS_DEPLOYMENT_TARGET|IPHONEOS_SIMULATOR_DEPLOYMENT_TARGET|g' usage_examples/ios_toolchain/wrapper.c
+            sed -i 's|-miphoneos-version-min=|-miphonesimulator-version-min=|g' usage_examples/ios_toolchain/wrapper.c
+
+            # Build arm64 simulator
+            sed -i 's|^TRIPLE=.*|TRIPLE="arm64-apple-darwin11"|' usage_examples/ios_toolchain/build.sh
+            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+            cp -r $CLANGDIR $TARGETDIR/clang
+            tar -zcf dist/ioscross-${version}-arm64-linux-${ARCH_SUFFIX}-gnu-ubuntu-$1.tar.gz -C $TARGETDIR .
+            rm -rf $TARGETDIR
+
+            # Build x86_64 simulator
+            sed -i 's|^TRIPLE=.*|TRIPLE="x86_64-apple-darwin11"|' usage_examples/ios_toolchain/build.sh
+            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" x86_64
+            cp -r $CLANGDIR $TARGETDIR/clang
+            tar -zcf dist/ioscross-${version}-x86_64-linux-${ARCH_SUFFIX}-gnu-ubuntu-$1.tar.gz -C $TARGETDIR .
+            rm -rf $TARGETDIR
+          elif [[ "$2" == iPhoneOS* ]]; then
+            # iPhone OS build
+            export IPHONEOS_DEPLOYMENT_TARGET=4.2
+            sed -i 's|^TRIPLE=.*|TRIPLE="arm64-apple-darwin11"|' usage_examples/ios_toolchain/build.sh
+            bash usage_examples/ios_toolchain/build.sh "$SDK_FILE" arm64
+            cp -r $CLANGDIR $TARGETDIR/clang
+            tar -zcf dist/ioscross-${version}-arm64-linux-${ARCH_SUFFIX}-gnu-ubuntu-$1.tar.gz -C $TARGETDIR .
+            rm -rf $TARGETDIR
+          else
+            echo "Unknown SDK version: $2"
+            exit 1
+          fi
+          EOF
+
+          chmod +x build_script.sh
+
+      - name: Build ioscross
+        run: |
+          docker run --rm \
+            --volume "${PWD}:/cctools-port" \
+            --workdir /cctools-port \
+            ubuntu:${{ matrix.ubuntu_version }} \
+            /bin/bash -c "/cctools-port/build_script.sh '${{ matrix.ubuntu_version }}' '${{ matrix.sdk_versions }}'"
+
+      - name: List the packages
+        run: ls -la dist
